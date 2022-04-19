@@ -1,0 +1,11 @@
+GET http://localhost:8080/api/hello
+
+
+###
+GET http://localhost:8080/api/hello
+Authorization: Basic yohan.boichut@univ-orleans.fr monMotDePasse
+
+
+###
+GET http://localhost:8080/api/hello
+Authorization: Basic gerard.menvussaa@etu.univ-orleans.fr sonMotDePasse
