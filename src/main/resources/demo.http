@@ -9,3 +9,8 @@ Authorization: Basic yohan.boichut@univ-orleans.fr monMotDePasse
 ###
 GET http://localhost:8080/api/hello
 Authorization: Basic gerard.menvussaa@etu.univ-orleans.fr sonMotDePasse
+
+###
+
+POST http://localhost:8080/api/utilisateurs
+Authorization: Basic yohan.boichut@univ-orleans.fr monMotDePasse

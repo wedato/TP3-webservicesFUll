@@ -1,0 +1,510 @@
+= TP3 -- Web-service / SpringBoot
+
+* Exercice sur authentification basique
+* Au début un exercice sans facade métier
+* Sujet où les professeurs peuvent répondre à des questions
+* Coder le modèle avec comme identifiant des professeurs et des étudiants l'adresse mail
+* En fonction de l'adresse mail on peut calculer le rôle
+* Double clé primaire dans la classe User (adresse mail \+ int auto-increment)
+
+
+
+== Mettre en place un Web-service sécurisé
+
+En suivant le tutoriel de Frédéric Moal (https://youtu.be/0D2myzV5h3A), déployez un web-service vide mais où la sécurité est activée (dépendances Maven). 
+
+
+
+
+
+
+== Un web service pour le suivi de projet
+
+Vous devrez mettre en place un web-service (dont vous disposez du modèle) sur le thème décrit ci-dessous.
+
+
+Pour aider le suivi de projets, un professeur de web-service décide de mettre en place une application permettant aux étudiants de poser des questions.
+Les professeurs peuvent répondre aux questions ouvertes (non encore répondues).
+Les étudiants peuvent alors consulter les réponses aux questions qu'ils ont posées.
+
+Votre API devra permettre _au minimum_ les opérations suivantes :
+
+
+
+- *Inscrire un compte* (numéro étudiant et password de l'étudiant, nom, prénom et date de naissance de l'étudiant).
+Chaque étudiant est identifié par son numéro étudiant.
+
+
+
+- Un *étudiant authentifié* (numéro étudiant/password) peut poser une question.
+
+
+
+- Un *étudiant authentifié* (numéro étudiant/password) peut consulter ses questions auxquelles le professeur a répondu.
+
+
+
+- Un *professeur authentifié* peut répondre à une question en attente d'une réponse.
+
+
+
+- Un *professeur authentifié* peut récupérer toutes les questions en attente de réponses.
+
+
+
+
+
+
+
+== Questions 
+
+
+. Dans la classe principale de votre application, vous devez nourrir votre façade avec des données. Transformez tout d'abord votre façade en un objet _scannable_ par SpringBoot i.e. @Component. 
+Ensuite ajoutez dans la classe principale de votre application le code suivant : 
+
+
+[source, java]
+----
+    @Autowired
+    FacadeUtilisateurs facadeUtilisateurs;
+
+    @Bean
+    public CommandLineRunner commandLineRunner() {
+        return args -> {
+
+            facadeUtilisateurs.inscrireUtilisateur("yohan.boichut@univ-orleans.fr",
+                    "monMotDePasse");
+
+            facadeUtilisateurs.inscrireUtilisateur("gerard.menvussaa@etu.univ-orleans.fr",
+                    "sonMotDePasse");
+
+
+        };
+    }
+
+----
+
+L'inconvénient du code ci-dessus est que les mots de passes sont stockés en clair dans la façade (ce qui est une très mauvaise idée). 
+Nous avons donc besoin de chiffrer les mots de passe avant de les stocker. En vous inspirant de la vidéo https://youtu.be/ZYpY6TnTI8M en particulier vers 12mn36s, 
+créez un _Bean_ permettant de configurer le chiffrement. Modifiez ainsi le morceau de programme précédent pour chiffrer les mots de passe au moment de l'appel à la façade. 
+
+*Petit conseil pratique :* Créez une classe configuration *CryptoConfig* (en utilisant l'annotation @Config) dans laquelle vous déclarerez votre bean.  
+
+[start=2]
+
+. Complétez le tableau ci-dessous avec l'ensemble des URIs de votre web-service, en précisant les paramètres entrants et sortants, le contexte d'utilisation, etc.
+
+.URIs de votre service
+[cols="2m,1a,6a"]
+|===
+| URI | Méthode | Description
+| /inscription
+| POST
+| Inscrire un utilisateur.
+
+--
+Requête::
+Corp de la requete avec numéro étudiant et password de l'étudiant, nom, prénom et date de naissance de l'étudiant.
+Réponse::
+* 200 OK : Avec ecris l'utilisateur "numEtu" est correctement enregistrée.
+--
+
+| /Question
+| POST
+| Un Etudiant pose une question.
+
+--
+Requête::
+
+----
+{
+"Question": "Ma question"
+}
+----
+
+Réponse::
+* 200 OK : Votre question a bien été enregistrer, en text/plain.
+--
+
+| /Question/{idUser}
+| GET
+| Un Etudiant peut consulter ses questions
+
+--
+Requête::
+
+
+
+pas de corp, tout est dans l'uri
+
+
+
+Réponse::
+* 200 OK : Renvoie la liste des reponses a ses questions, en text/plain.
+--
+
+
+
+|===
+
+[start=3]
+
+. Codez votre API en utilisant Spring Boot, avec une *authentification Basic* et en vous limitant, dans un premier temps, à une représentation _InMemory_ des utilisateurs. 
+Cela implique qu'uniquement les personnes enregistrées dans la _base Springboot_ pourront accéder au service. Même si vous ajoutez des personnes dans la 
+façade, tant que ces personnes ne sont pas déclarées dans la _base Springboot_, elles ne pourront pas accéder au service. 
+
+Nous proposons le principe suivant : les personnes qui ont un email de la forme @etu.univ-orleans.fr auront le rôle ETUDIANT et ceux qui ont email de la forme @univ-orleans.fr auront le rôle 
+ENSEIGNANT et ETUDIANT. 
+
+
+Vous pouvez vous aider des vidéos suivantes : 
+
+* https://youtu.be/jZVdXnL0Wiw
+* https://youtu.be/u-9kmMZnkyM
+
+
+Vous pouvez retrouver un code équivalent sur github : *https://github.com/fredmoal/live-demo-security*
+
+[start=4]
+. Ecrire un script permettant de valider votre web-service. Pensez à mettre un scénario où un nouvel individu
+s'inscrit à la plate-forme. Montrez également que ce nouvel individu ne peut pas accéder aux fonctionnalités du web-service
+et qu'un 403 est retourné sur chacune des fonctionnalités.
+
+. Evidemment, c'est très génant de ne pas pouvoir autoriser dynamiquement l'accès à de nouvelles personnes au web-service.
+Faites évoluer votre application en utilisant un _UserDetailService_ permettant ainsi de faire une vraie authentification dynamique en se basant sur les 
+personnes enregistrées dans la façade. 
+
+
+Pour faire évoluer votre application, vous pouvez vous aider de la vidéo suivante : 
+
+* https://youtu.be/ZYpY6TnTI8M
+
+
+*Tips :* pensez à commenter votre code devenu inutile dans cette nouvelle version (histoire de garder un historique de ce que
+vous avez fait).
+
+
+
+
+
+Vous retrouverez ci-dessous les classes métiers (vous devrez générer les classes héritant de la classe
+Exception):
+
+[source, java]
+----
+public class Question {
+    private  int idUtilisateur;
+    private  String libelleQuestion;
+    private String reponse;
+    private String idQuestion;
+
+    public void setIdUtilisateur(int idUtilisateur) {
+        this.idUtilisateur = idUtilisateur;
+    }
+
+    public void setLibelleQuestion(String libelleQuestion) {
+        this.libelleQuestion = libelleQuestion;
+    }
+
+    public Question(int idUtilisateur, String question) {
+        this.idUtilisateur = idUtilisateur;
+        this.libelleQuestion = question;
+        this.idQuestion = UUID.randomUUID().toString();
+    }
+
+    public String getIdQuestion() {
+        return idQuestion;
+    }
+
+    public void setIdQuestion(String idQuestion) {
+        this.idQuestion = idQuestion;
+    }
+
+    public int getIdUtilisateur() {
+        return idUtilisateur;
+    }
+
+    public String getLibelleQuestion() {
+        return libelleQuestion;
+    }
+
+    public String getReponse() {
+        return reponse;
+    }
+
+    public void setReponse(String reponse) {
+        this.reponse = reponse;
+    }
+}
+
+public class Utilisateur {
+
+    private String login;
+    private String motDePasse;
+    private int idUtilisateur;
+    private static int IDS=0;
+
+
+    public Utilisateur(String login, String motDePasse) {
+        this.login = login;
+        this.motDePasse = motDePasse;
+        this.idUtilisateur = IDS++;
+    }
+
+    public String getLogin() {
+        return login;
+    }
+
+    public int getIdUtilisateur() {
+        return idUtilisateur;
+    }
+
+
+    public boolean verifierMotDePasse(String motDePasse){
+        return this.motDePasse.equals(motDePasse);
+    }
+
+    public String getMotDePasse() {
+        return this.motDePasse;
+    }
+
+}
+
+public class FacadeApplication {
+    /**
+     * Les utilisateurs ne sont pas stockés ici, on n'utilise que leur identifiant integer
+     * On stocke ici toutes les questions posées par chaque utilisateur
+     */
+    private Map<Integer, Collection<Question>> utilisateursQuestionsMap;
+
+    /**
+     * Map de toutes les questions posées
+     */
+    private Map<String,Question> questionsMap;
+
+
+    public FacadeApplication() {
+        utilisateursQuestionsMap = new HashMap<Integer, Collection<Question>>();
+        questionsMap = new HashMap<String, Question>();
+
+    }
+
+    /**
+     * Permet à un idUtilisateur de poser une question
+     * @param idUtilisateur
+     * @param question
+     * @return l'identifiant string aléatoire de la question créée
+     */
+    public String ajouterUneQuestion(int idUtilisateur, String question) {
+        Question question1 = new Question(idUtilisateur,question);
+        questionsMap.put(question1.getIdQuestion(),question1);
+        if (utilisateursQuestionsMap.containsKey(idUtilisateur)) {
+            this.utilisateursQuestionsMap.get(idUtilisateur).add(question1);
+        }
+        else {
+            Collection<Question> questions = new ArrayList<Question>();
+            questions.add(question1);
+            this.utilisateursQuestionsMap.put(idUtilisateur,questions);
+        }
+        return question1.getIdQuestion();
+    }
+    /**
+     * Permet à un utilisateur de répondre à une question
+     * @param idQuestion
+     * @param reponse
+     * @throws QuestionInexistanteException
+     */
+    public void repondreAUneQuestion(String idQuestion, String reponse) throws QuestionInexistanteException {
+        if (this.questionsMap.containsKey(idQuestion)) {
+            this.questionsMap.get(idQuestion).setReponse(reponse);
+        }
+        else {
+            throw new QuestionInexistanteException();
+        }
+    }
+    /**
+     * Permet de récupérer toutes les questions en attente de réponse
+     * @return
+     */
+
+    public Collection<Question> getQuestionsSansReponses(){
+        return this.questionsMap.values().stream().filter(q ->Objects.isNull(
+                q.getReponse()) || q.getReponse().isBlank()).collect(Collectors.<Question>toList());
+    }
+
+    /**
+     * Permet à un utilisateur de récupérer toutes les questions qu'il a posées pour lesquelles
+     * quelqu'un a répondu
+     * @param idUtilisateur
+     * @return
+     * @throws UtilisateurInexistantException
+     */
+
+    public Collection<Question> getQuestionsAvecReponsesByUser(int idUtilisateur) throws UtilisateurInexistantException {
+        if (this.utilisateursQuestionsMap.containsKey(idUtilisateur)) {
+            return this.utilisateursQuestionsMap.get(idUtilisateur)
+                    .stream().filter(q -> Objects.nonNull(q.getReponse())
+                            && (!q.getReponse().isBlank())).collect(Collectors.toList());
+        }
+        else {
+            throw new UtilisateurInexistantException();
+        }
+    }
+
+
+    /**
+     * Permet à un utilisateur de récupérer toutes les questions qu'il a posées pour lesquelles
+     * personne n'a répondu
+     * @param idUtilisateur
+     * @return
+     * @throws UtilisateurInexistantException
+     */
+
+    public Collection<Question> getQuestionsSansReponsesByUser(int idUtilisateur) throws UtilisateurInexistantException {
+        if (this.utilisateursQuestionsMap.containsKey(idUtilisateur)) {
+            return this.utilisateursQuestionsMap.get(idUtilisateur)
+                    .stream()
+                    .filter(q -> Objects.isNull(q.getReponse()) || q.getReponse().isBlank()).collect(Collectors.toList());
+        }
+        else {
+            throw new UtilisateurInexistantException();
+
+        }
+    }
+
+
+    /**
+     * Permet de récupérer toutes les questions posées par un utilisateur
+     * @param idUtilisateur
+     * @return
+     * @throws UtilisateurInexistantException
+     */
+
+
+
+    public Collection<Question> getToutesLesQuestionsByUser(int idUtilisateur) throws UtilisateurInexistantException {
+        if (this.utilisateursQuestionsMap.containsKey(idUtilisateur)) {
+            return this.utilisateursQuestionsMap.get(idUtilisateur);
+        }
+        else {
+            throw new UtilisateurInexistantException();
+
+        }
+    }
+
+    /**
+     * Permet de récupérer l'ensemble des questions posées
+     * @return
+     */
+    public Collection<Question> getToutesLesQuestions() {
+        return questionsMap.values();
+    }
+
+
+    /**
+     * Permet de récupérer une question à partir du moment où
+     * cette personne appartient à l'utilisateur qui l'a posée
+     * @param idUtilisateur
+     * @param idQuestion
+     * @return
+     * @throws QuestionInexistanteException
+     * @throws AccessIllegalAUneQuestionException
+     * @throws UtilisateurInexistantException
+     */
+
+    public Question getQuestionByIdPourUnUtilisateur(int idUtilisateur,String idQuestion) throws QuestionInexistanteException, AccessIllegalAUneQuestionException, UtilisateurInexistantException {
+        Question q = questionsMap.get(idQuestion);
+        if (Objects.isNull(q))
+            throw new QuestionInexistanteException();
+        Collection<Question> questionsIdUtilisateur = this.utilisateursQuestionsMap.get(idUtilisateur);
+
+        if (Objects.isNull(questionsIdUtilisateur)) {
+            throw new UtilisateurInexistantException();
+        }
+
+
+        if (questionsIdUtilisateur.contains(q)) {
+            return q;
+        }
+        else {
+            throw new AccessIllegalAUneQuestionException();
+        }
+
+    }
+}
+
+
+public class FacadeUtilisateurs {
+    /**
+     * Permet de stocker l'ensemble des utilisateurs inscrits au service
+     */
+
+
+
+    private Map<String,Utilisateur> utilisateursMap;
+
+    public FacadeUtilisateurs() {
+        utilisateursMap = new HashMap<>();
+    }
+
+    /**
+     * Permet de récupérer l'identifiant Integer à partir du login (email)
+     * @param login
+     * @return
+     * @throws UtilisateurInexistantException
+     */
+    public int getUtilisateurIntId(String login) throws UtilisateurInexistantException{
+        if (utilisateursMap.containsKey(login))
+            return this.utilisateursMap.get(login).getIdUtilisateur();
+        else
+            throw new UtilisateurInexistantException();
+    }
+
+    /**
+     * Permet de récupérer un Utilisateur à partir de son login
+     * @param login
+     * @return
+     */
+
+    public Utilisateur getUtilisateurByLogin(String login) {
+        return utilisateursMap.get(login);
+    }
+
+
+    /**
+     * Permet d'inscrire un nouvel utilisateur à la plate-forme
+     * @param login
+     * @param mdp
+     * @return son identifiant Integer
+     * @throws LoginDejaUtiliseException
+     */
+    public int inscrireUtilisateur(String login, String mdp) throws LoginDejaUtiliseException {
+        if (utilisateursMap.containsKey(login))
+            throw new LoginDejaUtiliseException();
+        else {
+            Utilisateur utilisateur = new Utilisateur(login,mdp);
+            utilisateursMap.put(utilisateur.getLogin(),utilisateur);
+            return utilisateur.getIdUtilisateur();
+        }
+    }
+
+
+    /**
+     * Permet de vérifier si le mot de passe est correct (useless
+     * dans la version finale)
+     * @param login
+     * @param motDePasse
+     * @return
+     */
+    public boolean verifierMotDePasse(String login, String motDePasse){
+        if (utilisateursMap.containsKey(login)){
+            return utilisateursMap.get(login).verifierMotDePasse(motDePasse);
+        }
+        else
+            return false;
+    }
+
+}
+
+
+----
